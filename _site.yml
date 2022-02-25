@@ -1,7 +1,7 @@
 name: "Taliepus dentatus Zoea 1"
 output_dir: "."
 navbar:
-  title: "My Website"
+  title: "Tesis"
   left:
     - text: "Mortalidad"
       href: index.html
