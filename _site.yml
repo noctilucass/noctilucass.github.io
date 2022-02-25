@@ -1,9 +1,13 @@
-name: "my-website"
+name: "Taliepus dentatus Zoea 1"
 output_dir: "."
 navbar:
   title: "My Website"
   left:
-    - text: "Home"
+    - text: "Mortalidad"
       href: index.html
-    - text: "About"
+    - text: "Morfometría"
       href: about.html
+output:
+  html_document:
+    theme: united
+    highlight: textmate

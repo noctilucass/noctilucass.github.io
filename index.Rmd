@@ -1,5 +1,103 @@
 ---
-title: "My Website"
+title: "Mortalidad de Larvas zoea 1 de Taliepus dentatus bajo 3 temperaturas distintas"
 ---
 
-Hello, Website!
+
+# Paquetes utilizados a lo largo del Script. 
+```{r message=FALSE, warning=FALSE, include=TRUE}
+library(cowplot)
+library(scales)
+library(dplyr)
+library(gridExtra)
+library(tidyverse)
+library(ggsci)
+library(ggplot2)
+library(Rmisc)
+library(survminer)
+library(survival)
+library(MASS)
+```
+
+# Importación de base de datos, definición de factores y creación de figura numero 7.
+```{r message=FALSE, warning=FALSE, include=TRUE}
+#Importo base de datos.
+Mort<-read.delim("/Users/lucasb/Dropbox/Mac/Desktop/TESIS/TESIS B/RESULTADOS/mort.txt")
+Mort$bino<-Mort$Vivas/100
+
+
+#Defino temperatura como un factor
+Mort$Temperatura<-as.factor(Mort$Temperatura)
+
+
+#Grafico de la supervivencia en las tres temperaturas por cada frasco 
+Grafico_frascos<-ggplot(Mort, aes(x=Dia, y=Vivas, colour=Temperatura)) + geom_point() + theme_classic() + ggtitle("Supervivencia")+facet_wrap(~Temperatura*Frasco) + labs(x="Día", subtitle = "Replicas (A-B-C) por Temperatura")
+Grafico_frascos + scale_colour_manual(values =c("dodgerblue1", "green3", "firebrick1"), labels=c("12°C","15°C","17°C"))
+```
+
+
+# Preparando tabla con estadisticos basicos (SD, SE, CI, MEAN) para analisis de LT50 y Kaplan-meier. 
+```{r message=FALSE, warning=FALSE, include=TRUE}
+#Estadisticos basicos (SD, SE, CI, MEAN)
+LT50_summary<- summarySE(Mort, measurevar="bino", groupvars=c("Temperatura","Dia"))
+print(LT50_summary)
+```
+
+
+# Analisis estadistico de LT50 (quasibinomial), tasas de mortalidad y creación de grafico. 
+```{r message=FALSE, warning=FALSE, include=TRUE}
+#Separación de tabla por temperatura
+mort_12<-LT50_summary[1:11, ]
+mort_15<-LT50_summary[12:22, ]
+mort_17<-LT50_summary[23:32,]
+
+#Modelo lineales generalizados por temperatura, que permitieron obtener tasas de mortalidad
+model1<-glm(data=mort_12, bino ~ Dia, family=quasibinomial())
+summary(model1)
+
+model2<-glm(data=mort_15, bino ~ Dia, family=quasibinomial())
+summary(model2)
+
+model3<-glm(data=mort_17, bino ~ Dia, family=quasibinomial())
+summary(model3)
+
+#dose.p utiliza los modelos lineales para encontrar la dosis (día) sobre el cual el p=0.5 (50% de la población) ya ha muerto. 
+print(dose.p(model1, p = 0.5))
+print(dose.p(model2, p = 0.5))
+print(dose.p(model3, p = 0.5))
+
+#CREACIÓN DE GRAFICO FINAL (DIFERENCIAS ENTRE LT50), estos datos se extraen de los resultados de dose.p
+lt50<-c(4.531844, 6.493628, 5.919705)
+CI<-c(0.6121778*1.95, 0.11405*1.95, 0.2142654*1.95)
+temp<-c(12, 15,17)
+data_final<-data.frame(lt50, CI, temp)
+data_final$temp<-as.factor(data_final$temp)
+
+
+lt50_plot<-ggplot(data_final, aes(x=temp, y=lt50, fill=temp))+ geom_bar(stat="identity") + theme_classic() + labs(title = "Dosis letal (50% de la población muere)", x="", y="Día", fill= "Temperatura") + scale_fill_manual(values =c("dodgerblue1", "green3", "firebrick1"), labels=c("12°C","15°C","17°C")) 
+lt50_plot + geom_errorbar(aes(ymin=lt50-CI, ymax=lt50+CI), width=.2, position=position_dodge(0.05)) + geom_text(aes(label=c("4.50","6.50","5.90")),position = position_dodge(0.9), vjust = 10) 
+
+```
+
+# Analisis de Kaplan-Meier
+```{r message=FALSE, warning=FALSE, include=TRUE}
+##reorden de la tabla correcto para el analisis
+repV<- Mort$Muertas 
+  repV[repV=="0"]<-1
+
+KAP<-Mort %>%
+  mutate(count = repV) %>%
+  uncount(count)
+
+KAP$STATUS <- ifelse (KAP$Muertas==0, 1, 2)
+survObj <- Surv(time=KAP$Dia, event=KAP$STATUS==2)
+
+#Analisis de Kaplan-Meier
+sfit <- survfit(Surv(Dia, STATUS)~Temperatura, data=KAP)
+
+#Grafico de Kaplan-Meier
+ggsurvplot(sfit, conf.int=TRUE, pval=TRUE, risk.table=FALSE, 
+           legend.labs=c("12°C", "15°C","17°C"), legend.title="Temperatura",  
+           palette=(c("dodgerblue1", "green3", "firebrick1")), 
+           title="Kaplan-Meier Curve for Zoea 1 Survival to Temperature", 
+           risk.table.height=.15, ylab="Supervivencia", xlab="Día")
+```

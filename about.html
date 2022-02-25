@@ -11,12 +11,12 @@
 
 
 
-<title>About This Website</title>
+<title>Morfometría Geometrica para la comparación de morfología de Larvas zoea 1 de Taliepus dentatus bajo 3 temperaturas distintas</title>
 
 <script src="site_libs/header-attrs-2.11/header-attrs.js"></script>
 <script src="site_libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<link href="site_libs/bootstrap-3.3.5/css/bootstrap.min.css" rel="stylesheet" />
+<link href="site_libs/bootstrap-3.3.5/css/united.min.css" rel="stylesheet" />
 <script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
 <script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
 <script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
@@ -30,7 +30,7 @@
        code {color: inherit; background-color: rgba(0, 0, 0, 0.04);}
        pre:not([class]) { background-color: white }</style>
 <script src="site_libs/navigation-1.1/tabsets.js"></script>
-<link href="site_libs/highlightjs-9.12.0/default.css" rel="stylesheet" />
+<link href="site_libs/highlightjs-9.12.0/textmate.css" rel="stylesheet" />
 <script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
 
 <style type="text/css">
@@ -242,10 +242,10 @@ $(document).ready(function () {
     <div id="navbar" class="navbar-collapse collapse">
       <ul class="nav navbar-nav">
         <li>
-  <a href="index.html">Home</a>
+  <a href="index.html">Mortalidad</a>
 </li>
 <li>
-  <a href="about.html">About</a>
+  <a href="about.html">Morfometría</a>
 </li>
       </ul>
       <ul class="nav navbar-nav navbar-right">
@@ -259,12 +259,268 @@ $(document).ready(function () {
 
 
 
-<h1 class="title toc-ignore">About This Website</h1>
+<h1 class="title toc-ignore">Morfometría Geometrica para la comparación de morfología de Larvas zoea 1 de Taliepus dentatus bajo 3 temperaturas distintas</h1>
 
 </div>
 
 
-<p>More about this website.</p>
+<div id="libreria" class="section level1">
+<h1>Libreria</h1>
+<pre class="r"><code>library(StereoMorph)
+library(readr)
+library(geomorph)
+library(ggplot2)
+library(lmerTest)
+library(lme4)
+library(gridExtra)
+library(cowplot)
+library(Morpho)
+library(tidyverse)
+library(car)
+library(ggsci)
+library(RColorBrewer)
+library(gridGraphics)
+library(ggpubr)</code></pre>
+</div>
+<div id="importación-de-los-datos-links-entre-landmarks-para-cada-paquete-geomorphomorpho-y-traits" class="section level1">
+<h1>Importación de los datos, links entre landmarks para cada paquete (Geomorpho;Morpho) y traits</h1>
+<pre class="r"><code>setwd(&quot;~/Desktop/ECOMORFOLOGiA/Proyecto taliepus/TESIS&quot;)
+#IMPORTO DIGITALIZACIÓN (DIGIDATA) Y CLASIFICADORES (TRAIT), LINKS
+#REORDENO DIGITALIZACIÓN (array_data)
+DIGIDAT&lt;-readShapes(&quot;/Users/lucasb/Dropbox/Mac/Desktop/ECOMORFOLOGiA/Proyecto taliepus/TESIS/zoea1-5-8&quot;)
+array_data&lt;-readland.shapes(DIGIDAT, nCurvePts= c(7,7))
+
+traitF&lt;- read_delim(&quot;trait1-5-8.txt&quot;, 
+                    delim = &quot;\t&quot;, escape_double = FALSE, 
+                    trim_ws = TRUE)
+linkscva&lt;-list(c(1,8:8,9:9,10:10,11:11,12:12,7),c(3,5:4,5:4,6:6,3),c(1,13:13,14:14,15:15,16:16,17:17,2))
+linksgeo &lt;- read_delim(&quot;links.txt&quot;, delim = &quot;\t&quot;, 
+                    escape_double = FALSE, col_names = FALSE, 
+                    trim_ws = TRUE)
+linksgeo&lt;-as.matrix(linksgeo)
+traitF$Temp&lt;- as.factor(traitF$Temp)
+traitF$Replica&lt;-as.factor(traitF$Replica)
+traitF$Dia&lt;-as.factor(traitF$Dia)</code></pre>
+</div>
+<div id="analisis-de-generalizado-de-procrustes-gpa" class="section level1">
+<h1>Analisis de Generalizado de Procrustes (GPA)</h1>
+<pre class="r"><code>GPA&lt;- gpagen(array_data,
+             ProcD=FALSE, print.progress = FALSE, curves = array_data$curves) #procD=false, bending energy is the correct criterion for optimizing the positions of semilandmarks
+gdf&lt;- geomorph.data.frame(GPA, Temp=traitF$Temp, horas= traitF$Horas, replica=traitF$Replica, Dia=traitF$Dia)
+summary(GPA)</code></pre>
+<pre><code>## 
+## Call:
+## gpagen(A = array_data, curves = array_data$curves, ProcD = FALSE,  
+##     print.progress = FALSE) 
+## 
+## 
+## 
+## Generalized Procrustes Analysis
+## with Partial Procrustes Superimposition
+## 
+## 7 fixed landmarks
+## 10 semilandmarks (sliders)
+## 2-dimensional landmarks
+## 11 GPA iterations to converge
+## Minimized Bending Energy used
+## 
+## 
+## Consensus (mean) Configuration
+## 
+##                                X           Y
+## punta_espina_dorsal -0.341841028  0.01731614
+## esq_izq_caparaza    -0.085068726 -0.25314593
+## superior_ojo         0.229966648 -0.01850680
+## inferior_ojo         0.447884478 -0.01607858
+## derecha_ojo          0.342104485  0.05607758
+## izquierda_ojo        0.334606398 -0.09936267
+## organo_dorsal        0.149644393  0.14327407
+## curveLM.8           -0.260898115  0.04558196
+## curveLM.9           -0.171845951  0.06012997
+## curveLM.10          -0.083052978  0.06821003
+## curveLM.11           0.001610384  0.06663808
+## curveLM.12           0.080273940  0.09577316
+## curveLM.13          -0.247712345  0.02981819
+## curveLM.14          -0.150332728  0.03258600
+## curveLM.15          -0.063705797  0.01141165
+## curveLM.16          -0.063968774 -0.07874820
+## curveLM.17          -0.100289354 -0.16482681</code></pre>
+<pre class="r"><code>ref&lt;-mshape(GPA$coords)
+plot(ref, links = linksgeo)</code></pre>
+<p><img src="about_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
+<pre class="r"><code>plotAllSpecimens(GPA$coords, links = linksgeo, plot.param = list(txt.cex = 1.5, txt.col = &quot;#D53E4F&quot;, pt.bg = &quot;#BDBDBD&quot;, link.col = &quot;black&quot;, mean.bg = &quot;black&quot;)) + title(&quot;alligned specimens&quot;)</code></pre>
+<p><img src="about_files/figure-html/unnamed-chunk-3-2.png" width="672" /></p>
+<pre><code>## integer(0)</code></pre>
+</div>
+<div id="análisis-de-componentes-principales-pca-morfoespacio-por-día-y-temperatura" class="section level1">
+<h1>Análisis de Componentes Principales (PCA; MORFOESPACIO POR DÍA Y TEMPERATURA)</h1>
+<pre class="r"><code>PCA&lt;-gm.prcomp(GPA$coords)
+df_out &lt;- as.data.frame(PCA$x)
+pcaD&lt;-ggplot(data=df_out, aes(x=Comp1, y=Comp2, shape=gdf$Dia, col=gdf$Temp)) + geom_point(size=3) + theme_light() + labs(x=&quot;PC1=32%&quot;, y=&quot;PC2=20%&quot;, shape=&quot;Día&quot;, col=&quot;Temperatura&quot;, title = &quot;Análisis de Componentes principales&quot;)
+pcaD + scale_color_manual(values =c(&quot;blue&quot;, &quot;darkorange&quot;, &quot;red&quot;))</code></pre>
+<p><img src="about_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
+<pre class="r"><code>summaryPCA&lt;-summary(PCA)</code></pre>
+<pre><code>## 
+## Ordination type: Principal Component Analysis 
+## Centering by OLS mean
+## Orthogonal projection of OLS residuals
+## Number of observations: 120 
+## Number of vectors 33 
+## 
+## Importance of Components:
+##                              Comp1      Comp2       Comp3        Comp4        Comp5
+## Eigenvalues            0.002305977 0.00143727 0.001305145 0.0006670557 0.0004328794
+## Proportion of Variance 0.321577928 0.20043323 0.182007823 0.0930236655 0.0603668107
+## Cumulative Proportion  0.321577928 0.52201116 0.704018983 0.7970426486 0.8574094593
+##                               Comp6        Comp7        Comp8        Comp9
+## Eigenvalues            0.0003270445 0.0002694576 0.0001038828 7.778109e-05
+## Proportion of Variance 0.0456077014 0.0375769773 0.0144868845 1.084689e-02
+## Cumulative Proportion  0.9030171608 0.9405941381 0.9550810226 9.659279e-01
+##                              Comp10       Comp11       Comp12       Comp13
+## Eigenvalues            5.900533e-05 4.746444e-05 4.068929e-05 3.122884e-05
+## Proportion of Variance 8.228536e-03 6.619111e-03 5.674289e-03 4.354990e-03
+## Cumulative Proportion  9.741565e-01 9.807756e-01 9.864499e-01 9.908048e-01
+##                              Comp14       Comp15       Comp16       Comp17
+## Eigenvalues            1.727991e-05 1.621685e-05 8.548117e-06 6.504770e-06
+## Proportion of Variance 2.409755e-03 2.261506e-03 1.192070e-03 9.071169e-04
+## Cumulative Proportion  9.932146e-01 9.954761e-01 9.966682e-01 9.975753e-01
+##                              Comp18       Comp19       Comp20       Comp21
+## Eigenvalues            5.600075e-06 3.800367e-06 2.597828e-06 2.490454e-06
+## Proportion of Variance 7.809535e-04 5.299768e-04 3.622778e-04 3.473041e-04
+## Cumulative Proportion  9.983562e-01 9.988862e-01 9.992485e-01 9.995958e-01
+##                              Comp22       Comp23       Comp24       Comp25
+## Eigenvalues            1.563432e-06 9.516556e-07 1.280169e-07 9.754247e-08
+## Proportion of Variance 2.180271e-04 1.327123e-04 1.785248e-05 1.360270e-05
+## Cumulative Proportion  9.998138e-01 9.999465e-01 9.999644e-01 9.999780e-01
+##                              Comp26       Comp27       Comp28       Comp29
+## Eigenvalues            5.418605e-08 3.866308e-08 2.534770e-08 1.671369e-08
+## Proportion of Variance 7.556468e-06 5.391726e-06 3.534841e-06 2.330793e-06
+## Cumulative Proportion  9.999856e-01 9.999909e-01 9.999945e-01 9.999968e-01
+##                              Comp30       Comp31       Comp32       Comp33
+## Eigenvalues            1.183563e-08 6.365831e-09 4.675625e-09 1.078808e-18
+## Proportion of Variance 1.650528e-06 8.877413e-07 6.520352e-07 1.504442e-16
+## Cumulative Proportion  9.999985e-01 9.999993e-01 1.000000e+00 1.000000e+00</code></pre>
+</div>
+<div id="creación-de-grafico-de-barras-para-componentes-principales." class="section level1">
+<h1>Creación de grafico de barras para Componentes Principales.</h1>
+<pre class="r"><code>summaryPCA&lt;-as.data.frame(summaryPCA$PC.summary, row.names = NULL)
+summaryPCA&lt;-t(summaryPCA)
+colnames(summaryPCA) &lt;- c(&quot;Eigenvalues&quot;, &quot;Variance&quot;, &quot;Cumulative&quot;)
+summaryPCA&lt;-as.data.frame(summaryPCA)
+#Primeros 6 demuestran el 90% de la varianza. primeros 3 tienen sobre un 10%.
+pcarank&lt;-barplot(PCA$sdev^2/sum(PCA$sdev^2),ylab=&quot;% de Varianza&quot;, xlab = &quot;Componentes principales&quot;, names=1:33) +
+  title(&quot;Ranking de los Componentes Principales&quot;) </code></pre>
+<p><img src="about_files/figure-html/unnamed-chunk-5-1.png" width="672" /> # Anova de Procrustes por Replica (error de digitalización)</p>
+<pre class="r"><code>#ANOVA DE PROCRUSTES REPLICAS
+AnError&lt;-procD.lm(coords~replica, data = gdf, iter = 999, RRPP = TRUE)
+summary(AnError)</code></pre>
+<pre><code>## 
+## Analysis of Variance, using Residual Randomization
+## Permutation procedure: Randomization of null model residuals 
+## Number of permutations: 1000 
+## Estimation method: Ordinary Least Squares 
+## Sums of Squares and Cross-products: Type I 
+## Effect sizes (Z) based on F distributions
+## 
+##            Df      SS        MS     Rsq      F      Z Pr(&gt;F)   
+## replica    39 0.76436 0.0195989 0.89574 17.623 10.813  0.001 **
+## Residuals  80 0.08897 0.0011121 0.10426                        
+## Total     119 0.85333                                          
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## Call: procD.lm(f1 = coords ~ replica, iter = 999, RRPP = TRUE, data = gdf)</code></pre>
+<pre class="r"><code>##replicas  0.0195(MS)   95%
+##Residuals 0.00111(MS)  5%
+## 5% de las variaciones se explica por un error de digitalización. </code></pre>
+</div>
+<div id="análisis-de-variables-canónicas." class="section level1">
+<h1>Análisis de Variables Canónicas.</h1>
+<pre class="r"><code>Te&lt;-traitF$Temp
+coords_out&lt;-as.data.frame(gdf$coords)
+coords_out&lt;-t(coords_out)
+zoea.cva1&lt;- CVA(gdf$coords, groups = Te, p.adjust.method = &quot;bonferroni&quot;, rounds = 1000, robust = &quot;classical&quot;)</code></pre>
+<pre><code>## singular Covariance matrix: General inverse is used. Threshold for zero eigenvalue is 1e-10</code></pre>
+<pre class="r"><code>Cva_out&lt;-as.data.frame(zoea.cva1$CVscores)
+Cva_out$Dia&lt;-gdf$Dia
+Cva_out$Temp&lt;-gdf$Temp</code></pre>
+<p>#Importación de traits, imagenes digitalizadas y GPA por día.</p>
+<pre class="r"><code>trait1&lt;- read_delim(&quot;/Users/lucasb/Dropbox/Mac/Desktop/ECOMORFOLOGiA/Proyecto taliepus/TESIS/trait1.txt&quot;, show_col_types = FALSE)
+trait5&lt;- read_delim(&quot;/Users/lucasb/Dropbox/Mac/Desktop/ECOMORFOLOGiA/Proyecto taliepus/TESIS/trait5.txt&quot;, show_col_types = FALSE)
+trait8&lt;- read_delim(&quot;/Users/lucasb/Dropbox/Mac/Desktop/ECOMORFOLOGiA/Proyecto taliepus/TESIS/trait8.txt&quot;, show_col_types = FALSE)
+trait1$Temp&lt;-as.factor(trait1$Temp)
+trait5$Temp&lt;-as.factor(trait5$Temp)
+trait8$Temp&lt;-as.factor(trait8$Temp)
+zoea1&lt;-readShapes(&quot;/Users/lucasb/Dropbox/Mac/Desktop/ECOMORFOLOGiA/Proyecto taliepus/TESIS/zoea1&quot;)
+zoea5&lt;-readShapes(&quot;/Users/lucasb/Dropbox/Mac/Desktop/ECOMORFOLOGiA/Proyecto taliepus/TESIS/zoea5&quot;)
+zoea8&lt;-readShapes(&quot;/Users/lucasb/Dropbox/Mac/Desktop/ECOMORFOLOGiA/Proyecto taliepus/TESIS/zoea8&quot;)
+array_data1&lt;-readland.shapes(zoea1, nCurvePts= c(7,7))
+array_data5&lt;-readland.shapes(zoea5, nCurvePts= c(7,7))
+array_data8&lt;-readland.shapes(zoea8, nCurvePts= c(7,7))
+GPA1&lt;- gpagen(array_data1,
+             ProcD=FALSE, print.progress = FALSE, curves = array_data1$curves) #procD=false, bending energy is the correct criterion for optimizing the positions of semilandmarks
+GPA5&lt;-gpagen(array_data5,ProcD=FALSE, print.progress = FALSE, curves = array_data5$curves) 
+#procD=false, bending energy is the correct criterion for optimizing the positions of semilandmarks
+GPA8&lt;- gpagen(array_data8,
+             ProcD=FALSE, print.progress = FALSE, curves = array_data8$curves) #procD=false, bending energy is the correct criterion for optimizing the positions of semilandmarks</code></pre>
+</div>
+<div id="análisis-de-variables-canónicas-por-día." class="section level1">
+<h1>Análisis de Variables Canónicas por día.</h1>
+<pre class="r"><code>cva1&lt;- CVA(GPA1$coords, groups = trait1$Temp, p.adjust.method = &quot;bonferroni&quot;, rounds = 1000, robust = &quot;classical&quot;)</code></pre>
+<pre><code>## singular Covariance matrix: General inverse is used. Threshold for zero eigenvalue is 1e-10</code></pre>
+<pre class="r"><code>cva1[[&quot;Dist&quot;]][[&quot;probsEuclid&quot;]]</code></pre>
+<pre><code>##       12    15
+## 15 0.003      
+## 17 0.093 0.006</code></pre>
+<pre class="r"><code>cva5&lt;- CVA(GPA5$coords, groups = trait5$Temp, p.adjust.method = &quot;bonferroni&quot;, rounds = 1000, robust = &quot;classical&quot;)</code></pre>
+<pre><code>## singular Covariance matrix: General inverse is used. Threshold for zero eigenvalue is 1e-10</code></pre>
+<pre class="r"><code>cva5[[&quot;Dist&quot;]][[&quot;probsEuclid&quot;]]</code></pre>
+<pre><code>##       12    15
+## 15 0.213      
+## 17 0.003 0.018</code></pre>
+<pre class="r"><code>cva8&lt;- CVA(GPA8$coords, groups = trait8$Temp, p.adjust.method = &quot;bonferroni&quot;, rounds = 1000, robust = &quot;classical&quot;)</code></pre>
+<pre><code>## singular Covariance matrix: General inverse is used. Threshold for zero eigenvalue is 1e-10</code></pre>
+<pre class="r"><code>cva8[[&quot;Dist&quot;]][[&quot;probsEuclid&quot;]]</code></pre>
+<pre><code>##       12    15
+## 15 0.018      
+## 17 0.003 0.039</code></pre>
+</div>
+<div id="morphos-promedio-por-temperatura-vs-consensus-del-total-grafico-de-morfoespacio-de-variables-canónicas-día-1" class="section level1">
+<h1>Morphos promedio por temperatura vs consensus del total, grafico de morfoespacio de variables canónicas (día 1)</h1>
+<pre class="r"><code>plotRefToTarget(zoea.cva1[[&quot;Grandm&quot;]], cva1[[&quot;groupmeans&quot;]][,,1], method =&quot;points&quot;, links = linksgeo, axes = TRUE, label = TRUE, gridPars = gridPar(tar.pt.bg = &quot;blue&quot;, tar.link.col=&quot;blue&quot;,tar.link.lwd=2, link.col = &quot;grey&quot;, pt.bg = &quot;grey&quot;, link.lwd = 2, pt.size = 1, tar.pt.size = 1.5))</code></pre>
+<p><img src="about_files/figure-html/unnamed-chunk-10-1.png" width="672" /></p>
+<pre class="r"><code>plotRefToTarget(zoea.cva1[[&quot;Grandm&quot;]], cva1[[&quot;groupmeans&quot;]][,,2], method =&quot;points&quot;, links = linksgeo, axes = TRUE, label = TRUE, gridPars = gridPar(tar.pt.bg = &quot;darkorange&quot;, tar.link.col=&quot;darkorange&quot;,tar.link.lwd=2, link.col = &quot;grey&quot;, pt.bg = &quot;grey&quot;, link.lwd = 2, pt.size = 1, tar.pt.size = 1.5))</code></pre>
+<p><img src="about_files/figure-html/unnamed-chunk-10-2.png" width="672" /></p>
+<pre class="r"><code>plotRefToTarget(zoea.cva1[[&quot;Grandm&quot;]], cva1[[&quot;groupmeans&quot;]][,,3], method =&quot;points&quot;, links = linksgeo, axes = TRUE, label = TRUE, gridPars = gridPar(tar.pt.bg = &quot;red&quot;, tar.link.col=&quot;red&quot;,tar.link.lwd=2, link.col = &quot;grey&quot;, pt.bg = &quot;grey&quot;, link.lwd = 2, pt.size = 1, tar.pt.size = 1.5))</code></pre>
+<p><img src="about_files/figure-html/unnamed-chunk-10-3.png" width="672" /></p>
+<pre class="r"><code>Cva_out1&lt;-as.data.frame(Cva_out[Cva_out$Dia==1,])
+ggplot(data=Cva_out1, aes(x=`CV 1`, y=`CV 2`, col=Temp)) + geom_point() + stat_ellipse(level = 0.7) + coord_fixed() +
+  labs(title = &quot;Análisis de variables canónicas&quot;, x=&quot;Variable canónica 1 (76.4%)&quot;, y= &quot;Variable canónica 2 (23.6%)&quot;, col= &quot;Temperatura&quot;, subtitle = &quot;Día 1&quot;) + theme_classic() + scale_color_manual(values =c(&quot;blue&quot;, &quot;darkorange&quot;, &quot;red&quot;), labels=c(&quot;12°C&quot;,&quot;15°C&quot;,&quot;17°C&quot;))</code></pre>
+<p><img src="about_files/figure-html/unnamed-chunk-10-4.png" width="672" /> # Morphos promedio por temperatura vs consensus del total, grafico de morfoespacio de variables canónicas (día 5)</p>
+<pre class="r"><code>plotRefToTarget(zoea.cva1[[&quot;Grandm&quot;]], cva5[[&quot;groupmeans&quot;]][,,1], method =&quot;points&quot;, links = linksgeo, label = TRUE, gridPars = gridPar(tar.pt.bg = &quot;blue&quot;, tar.link.col=&quot;blue&quot;,tar.link.lwd=2, link.col = &quot;grey&quot;, pt.bg = &quot;grey&quot;, link.lwd = 2, pt.size = 1, tar.pt.size = 1.5))</code></pre>
+<p><img src="about_files/figure-html/unnamed-chunk-11-1.png" width="672" /></p>
+<pre class="r"><code>plotRefToTarget(zoea.cva1[[&quot;Grandm&quot;]], cva5[[&quot;groupmeans&quot;]][,,2], method =&quot;points&quot;, links = linksgeo, label = TRUE, gridPars = gridPar(tar.pt.bg = &quot;darkorange&quot;, tar.link.col=&quot;darkorange&quot;,tar.link.lwd=2, link.col = &quot;grey&quot;, pt.bg = &quot;grey&quot;, link.lwd = 2, pt.size = 1, tar.pt.size = 1.5))</code></pre>
+<p><img src="about_files/figure-html/unnamed-chunk-11-2.png" width="672" /></p>
+<pre class="r"><code>plotRefToTarget(zoea.cva1[[&quot;Grandm&quot;]], cva5[[&quot;groupmeans&quot;]][,,3], method =&quot;points&quot;, links = linksgeo, label = TRUE, gridPars = gridPar(tar.pt.bg = &quot;red&quot;, tar.link.col=&quot;red&quot;,tar.link.lwd=2, link.col = &quot;grey&quot;, pt.bg = &quot;grey&quot;, link.lwd = 2, pt.size = 1, tar.pt.size = 1.5))</code></pre>
+<p><img src="about_files/figure-html/unnamed-chunk-11-3.png" width="672" /></p>
+<pre class="r"><code>Cva_out5&lt;-as.data.frame(Cva_out[Cva_out$Dia==5,])
+ggplot(data=Cva_out5, aes(x=`CV 1`, y=`CV 2`, col=Temp)) + geom_point() + stat_ellipse(level = 0.70) + coord_fixed() +
+  labs(title = &quot;Análisis de variables canónicas&quot;, x=&quot;Variable canónica 1 (77.4%)&quot;, y= &quot;Variable canónica 2 (22.6%)&quot;, col= &quot;Temperatura&quot;, subtitle = &quot;Día 5&quot;) + theme_classic() + scale_color_manual(values =c(&quot;blue&quot;, &quot;darkorange&quot;, &quot;red&quot;), labels=c(&quot;12°C&quot;,&quot;15°C&quot;,&quot;17°C&quot;))</code></pre>
+<p><img src="about_files/figure-html/unnamed-chunk-11-4.png" width="672" /></p>
+</div>
+<div id="morphos-promedio-por-temperatura-vs-consensus-del-total-grafico-de-morfoespacio-de-variables-canónicas-día-8" class="section level1">
+<h1>Morphos promedio por temperatura vs consensus del total, grafico de morfoespacio de variables canónicas (día 8)</h1>
+<pre class="r"><code>plotRefToTarget(zoea.cva1[[&quot;Grandm&quot;]], cva8[[&quot;groupmeans&quot;]][,,1], method =&quot;points&quot;, links = linksgeo, label = TRUE, gridPars = gridPar(tar.pt.bg = &quot;blue&quot;, tar.link.col=&quot;blue&quot;,tar.link.lwd=2, link.col = &quot;grey&quot;, pt.bg = &quot;grey&quot;, link.lwd = 2, pt.size = 1, tar.pt.size = 1.5))</code></pre>
+<p><img src="about_files/figure-html/unnamed-chunk-12-1.png" width="672" /></p>
+<pre class="r"><code>plotRefToTarget(zoea.cva1[[&quot;Grandm&quot;]], cva8[[&quot;groupmeans&quot;]][,,2], method =&quot;points&quot;, links = linksgeo, label = TRUE, gridPars = gridPar(tar.pt.bg = &quot;darkorange&quot;, tar.link.col=&quot;darkorange&quot;,tar.link.lwd=2, link.col = &quot;grey&quot;, pt.bg = &quot;grey&quot;, link.lwd = 2, pt.size = 1, tar.pt.size = 1.5))</code></pre>
+<p><img src="about_files/figure-html/unnamed-chunk-12-2.png" width="672" /></p>
+<pre class="r"><code>plotRefToTarget(zoea.cva1[[&quot;Grandm&quot;]], cva8[[&quot;groupmeans&quot;]][,,3], method =&quot;points&quot;, links = linksgeo, label = TRUE, gridPars = gridPar(tar.pt.bg = &quot;red&quot;, tar.link.col=&quot;red&quot;,tar.link.lwd=2, link.col = &quot;grey&quot;, pt.bg = &quot;grey&quot;, link.lwd = 2, pt.size = 1, tar.pt.size = 1.5))</code></pre>
+<p><img src="about_files/figure-html/unnamed-chunk-12-3.png" width="672" /></p>
+<pre class="r"><code>Cva_out8&lt;-as.data.frame(Cva_out[Cva_out$Dia==8,])
+ggplot(data=Cva_out8, aes(x=`CV 1`, y=`CV 2`, col=Temp)) + geom_point() + stat_ellipse(level = 0.8) + coord_fixed() +
+  labs(title = &quot;Análisis de variables canónicas&quot;, x=&quot;Variable canónica 1 (79.1%)&quot;, y= &quot;Variable canónica 2 (20.9%)&quot;, col= &quot;Temperatura&quot;, subtitle = &quot;Día 8&quot;) + theme_classic() + scale_color_manual(values =c(&quot;blue&quot;, &quot;darkorange&quot;, &quot;red&quot;), labels=c(&quot;12°C&quot;,&quot;15°C&quot;,&quot;17°C&quot;))</code></pre>
+<p><img src="about_files/figure-html/unnamed-chunk-12-4.png" width="672" /></p>
+</div>
 
 
 

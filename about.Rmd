@@ -1,5 +1,154 @@
 ---
-title: "About This Website"
+title: "Morfometría Geometrica para la comparación de morfología de Larvas zoea 1 de Taliepus dentatus bajo 3 temperaturas distintas"
 ---
 
-More about this website.
+
+# Libreria 
+```{r message=FALSE, warning=FALSE, include=TRUE}
+library(StereoMorph)
+library(readr)
+library(geomorph)
+library(ggplot2)
+library(lmerTest)
+library(lme4)
+library(gridExtra)
+library(cowplot)
+library(Morpho)
+library(tidyverse)
+library(car)
+library(ggsci)
+library(RColorBrewer)
+library(gridGraphics)
+library(ggpubr)
+```
+
+# Importación de los datos, links entre landmarks para cada paquete (Geomorpho;Morpho) y traits 
+```{r message=FALSE, warning=FALSE, include=TRUE}
+setwd("~/Desktop/ECOMORFOLOGiA/Proyecto taliepus/TESIS")
+#IMPORTO DIGITALIZACIÓN (DIGIDATA) Y CLASIFICADORES (TRAIT), LINKS
+#REORDENO DIGITALIZACIÓN (array_data)
+DIGIDAT<-readShapes("/Users/lucasb/Dropbox/Mac/Desktop/ECOMORFOLOGiA/Proyecto taliepus/TESIS/zoea1-5-8")
+array_data<-readland.shapes(DIGIDAT, nCurvePts= c(7,7))
+
+traitF<- read_delim("trait1-5-8.txt", 
+                    delim = "\t", escape_double = FALSE, 
+                    trim_ws = TRUE)
+linkscva<-list(c(1,8:8,9:9,10:10,11:11,12:12,7),c(3,5:4,5:4,6:6,3),c(1,13:13,14:14,15:15,16:16,17:17,2))
+linksgeo <- read_delim("links.txt", delim = "\t", 
+                    escape_double = FALSE, col_names = FALSE, 
+                    trim_ws = TRUE)
+linksgeo<-as.matrix(linksgeo)
+traitF$Temp<- as.factor(traitF$Temp)
+traitF$Replica<-as.factor(traitF$Replica)
+traitF$Dia<-as.factor(traitF$Dia)
+```
+
+# Analisis de Generalizado de Procrustes (GPA)
+```{r message=FALSE, warning=FALSE, include=TRUE}
+GPA<- gpagen(array_data,
+             ProcD=FALSE, print.progress = FALSE, curves = array_data$curves) #procD=false, bending energy is the correct criterion for optimizing the positions of semilandmarks
+gdf<- geomorph.data.frame(GPA, Temp=traitF$Temp, horas= traitF$Horas, replica=traitF$Replica, Dia=traitF$Dia)
+summary(GPA)
+ref<-mshape(GPA$coords)
+plot(ref, links = linksgeo)
+plotAllSpecimens(GPA$coords, links = linksgeo, plot.param = list(txt.cex = 1.5, txt.col = "#D53E4F", pt.bg = "#BDBDBD", link.col = "black", mean.bg = "black")) + title("alligned specimens")
+```
+# Análisis de Componentes Principales (PCA; MORFOESPACIO POR DÍA Y TEMPERATURA)
+```{r message=FALSE, warning=FALSE, include=TRUE}
+PCA<-gm.prcomp(GPA$coords)
+df_out <- as.data.frame(PCA$x)
+pcaD<-ggplot(data=df_out, aes(x=Comp1, y=Comp2, shape=gdf$Dia, col=gdf$Temp)) + geom_point(size=3) + theme_light() + labs(x="PC1=32%", y="PC2=20%", shape="Día", col="Temperatura", title = "Análisis de Componentes principales")
+pcaD + scale_color_manual(values =c("blue", "darkorange", "red"))
+summaryPCA<-summary(PCA)
+```
+# Creación de grafico de barras para Componentes Principales. 
+```{r message=FALSE, warning=FALSE, include=TRUE}
+summaryPCA<-as.data.frame(summaryPCA$PC.summary, row.names = NULL)
+summaryPCA<-t(summaryPCA)
+colnames(summaryPCA) <- c("Eigenvalues", "Variance", "Cumulative")
+summaryPCA<-as.data.frame(summaryPCA)
+#Primeros 6 demuestran el 90% de la varianza. primeros 3 tienen sobre un 10%.
+pcarank<-barplot(PCA$sdev^2/sum(PCA$sdev^2),ylab="% de Varianza", xlab = "Componentes principales", names=1:33) +
+  title("Ranking de los Componentes Principales") 
+```
+# Anova de Procrustes por Replica (error de digitalización)
+```{r message=FALSE, warning=FALSE, include=TRUE}
+#ANOVA DE PROCRUSTES REPLICAS
+AnError<-procD.lm(coords~replica, data = gdf, iter = 999, RRPP = TRUE)
+summary(AnError)
+##replicas  0.0195(MS)	 95%
+##Residuals 0.00111(MS)	 5%
+## 5% de las variaciones se explica por un error de digitalización. 
+```
+# Análisis de Variables Canónicas. 
+```{r message=FALSE, warning=FALSE, include=TRUE}
+Te<-traitF$Temp
+coords_out<-as.data.frame(gdf$coords)
+coords_out<-t(coords_out)
+zoea.cva1<- CVA(gdf$coords, groups = Te, p.adjust.method = "bonferroni", rounds = 1000, robust = "classical")
+Cva_out<-as.data.frame(zoea.cva1$CVscores)
+Cva_out$Dia<-gdf$Dia
+Cva_out$Temp<-gdf$Temp
+```
+#Importación de traits, imagenes digitalizadas y GPA por día. 
+```{r message=FALSE, warning=FALSE, include=TRUE}
+trait1<- read_delim("/Users/lucasb/Dropbox/Mac/Desktop/ECOMORFOLOGiA/Proyecto taliepus/TESIS/trait1.txt", show_col_types = FALSE)
+trait5<- read_delim("/Users/lucasb/Dropbox/Mac/Desktop/ECOMORFOLOGiA/Proyecto taliepus/TESIS/trait5.txt", show_col_types = FALSE)
+trait8<- read_delim("/Users/lucasb/Dropbox/Mac/Desktop/ECOMORFOLOGiA/Proyecto taliepus/TESIS/trait8.txt", show_col_types = FALSE)
+trait1$Temp<-as.factor(trait1$Temp)
+trait5$Temp<-as.factor(trait5$Temp)
+trait8$Temp<-as.factor(trait8$Temp)
+zoea1<-readShapes("/Users/lucasb/Dropbox/Mac/Desktop/ECOMORFOLOGiA/Proyecto taliepus/TESIS/zoea1")
+zoea5<-readShapes("/Users/lucasb/Dropbox/Mac/Desktop/ECOMORFOLOGiA/Proyecto taliepus/TESIS/zoea5")
+zoea8<-readShapes("/Users/lucasb/Dropbox/Mac/Desktop/ECOMORFOLOGiA/Proyecto taliepus/TESIS/zoea8")
+array_data1<-readland.shapes(zoea1, nCurvePts= c(7,7))
+array_data5<-readland.shapes(zoea5, nCurvePts= c(7,7))
+array_data8<-readland.shapes(zoea8, nCurvePts= c(7,7))
+GPA1<- gpagen(array_data1,
+             ProcD=FALSE, print.progress = FALSE, curves = array_data1$curves) #procD=false, bending energy is the correct criterion for optimizing the positions of semilandmarks
+GPA5<-gpagen(array_data5,ProcD=FALSE, print.progress = FALSE, curves = array_data5$curves) 
+#procD=false, bending energy is the correct criterion for optimizing the positions of semilandmarks
+GPA8<- gpagen(array_data8,
+             ProcD=FALSE, print.progress = FALSE, curves = array_data8$curves) #procD=false, bending energy is the correct criterion for optimizing the positions of semilandmarks
+```
+
+# Análisis de Variables Canónicas por día. 
+```{r message=FALSE, warning=FALSE, include=TRUE}
+cva1<- CVA(GPA1$coords, groups = trait1$Temp, p.adjust.method = "bonferroni", rounds = 1000, robust = "classical")
+cva1[["Dist"]][["probsEuclid"]]
+cva5<- CVA(GPA5$coords, groups = trait5$Temp, p.adjust.method = "bonferroni", rounds = 1000, robust = "classical")
+cva5[["Dist"]][["probsEuclid"]]
+cva8<- CVA(GPA8$coords, groups = trait8$Temp, p.adjust.method = "bonferroni", rounds = 1000, robust = "classical")
+cva8[["Dist"]][["probsEuclid"]]
+```
+# Morphos promedio por temperatura vs consensus del total, grafico de morfoespacio de variables canónicas (día 1)
+```{r message=FALSE, warning=FALSE, include=TRUE}
+plotRefToTarget(zoea.cva1[["Grandm"]], cva1[["groupmeans"]][,,1], method ="points", links = linksgeo, axes = TRUE, label = TRUE, gridPars = gridPar(tar.pt.bg = "blue", tar.link.col="blue",tar.link.lwd=2, link.col = "grey", pt.bg = "grey", link.lwd = 2, pt.size = 1, tar.pt.size = 1.5))
+plotRefToTarget(zoea.cva1[["Grandm"]], cva1[["groupmeans"]][,,2], method ="points", links = linksgeo, axes = TRUE, label = TRUE, gridPars = gridPar(tar.pt.bg = "darkorange", tar.link.col="darkorange",tar.link.lwd=2, link.col = "grey", pt.bg = "grey", link.lwd = 2, pt.size = 1, tar.pt.size = 1.5))
+plotRefToTarget(zoea.cva1[["Grandm"]], cva1[["groupmeans"]][,,3], method ="points", links = linksgeo, axes = TRUE, label = TRUE, gridPars = gridPar(tar.pt.bg = "red", tar.link.col="red",tar.link.lwd=2, link.col = "grey", pt.bg = "grey", link.lwd = 2, pt.size = 1, tar.pt.size = 1.5))
+Cva_out1<-as.data.frame(Cva_out[Cva_out$Dia==1,])
+ggplot(data=Cva_out1, aes(x=`CV 1`, y=`CV 2`, col=Temp)) + geom_point() + stat_ellipse(level = 0.7) + coord_fixed() +
+  labs(title = "Análisis de variables canónicas", x="Variable canónica 1 (76.4%)", y= "Variable canónica 2 (23.6%)", col= "Temperatura", subtitle = "Día 1") + theme_classic() + scale_color_manual(values =c("blue", "darkorange", "red"), labels=c("12°C","15°C","17°C"))
+
+```
+# Morphos promedio por temperatura vs consensus del total, grafico de morfoespacio de variables canónicas (día 5)
+```{r message=FALSE, warning=FALSE, include=TRUE}
+plotRefToTarget(zoea.cva1[["Grandm"]], cva5[["groupmeans"]][,,1], method ="points", links = linksgeo, label = TRUE, gridPars = gridPar(tar.pt.bg = "blue", tar.link.col="blue",tar.link.lwd=2, link.col = "grey", pt.bg = "grey", link.lwd = 2, pt.size = 1, tar.pt.size = 1.5))
+plotRefToTarget(zoea.cva1[["Grandm"]], cva5[["groupmeans"]][,,2], method ="points", links = linksgeo, label = TRUE, gridPars = gridPar(tar.pt.bg = "darkorange", tar.link.col="darkorange",tar.link.lwd=2, link.col = "grey", pt.bg = "grey", link.lwd = 2, pt.size = 1, tar.pt.size = 1.5))
+plotRefToTarget(zoea.cva1[["Grandm"]], cva5[["groupmeans"]][,,3], method ="points", links = linksgeo, label = TRUE, gridPars = gridPar(tar.pt.bg = "red", tar.link.col="red",tar.link.lwd=2, link.col = "grey", pt.bg = "grey", link.lwd = 2, pt.size = 1, tar.pt.size = 1.5))
+Cva_out5<-as.data.frame(Cva_out[Cva_out$Dia==5,])
+ggplot(data=Cva_out5, aes(x=`CV 1`, y=`CV 2`, col=Temp)) + geom_point() + stat_ellipse(level = 0.70) + coord_fixed() +
+  labs(title = "Análisis de variables canónicas", x="Variable canónica 1 (77.4%)", y= "Variable canónica 2 (22.6%)", col= "Temperatura", subtitle = "Día 5") + theme_classic() + scale_color_manual(values =c("blue", "darkorange", "red"), labels=c("12°C","15°C","17°C"))
+
+```
+
+# Morphos promedio por temperatura vs consensus del total, grafico de morfoespacio de variables canónicas (día 8)
+```{r message=FALSE, warning=FALSE, include=TRUE}
+plotRefToTarget(zoea.cva1[["Grandm"]], cva8[["groupmeans"]][,,1], method ="points", links = linksgeo, label = TRUE, gridPars = gridPar(tar.pt.bg = "blue", tar.link.col="blue",tar.link.lwd=2, link.col = "grey", pt.bg = "grey", link.lwd = 2, pt.size = 1, tar.pt.size = 1.5))
+plotRefToTarget(zoea.cva1[["Grandm"]], cva8[["groupmeans"]][,,2], method ="points", links = linksgeo, label = TRUE, gridPars = gridPar(tar.pt.bg = "darkorange", tar.link.col="darkorange",tar.link.lwd=2, link.col = "grey", pt.bg = "grey", link.lwd = 2, pt.size = 1, tar.pt.size = 1.5))
+plotRefToTarget(zoea.cva1[["Grandm"]], cva8[["groupmeans"]][,,3], method ="points", links = linksgeo, label = TRUE, gridPars = gridPar(tar.pt.bg = "red", tar.link.col="red",tar.link.lwd=2, link.col = "grey", pt.bg = "grey", link.lwd = 2, pt.size = 1, tar.pt.size = 1.5))
+Cva_out8<-as.data.frame(Cva_out[Cva_out$Dia==8,])
+ggplot(data=Cva_out8, aes(x=`CV 1`, y=`CV 2`, col=Temp)) + geom_point() + stat_ellipse(level = 0.8) + coord_fixed() +
+  labs(title = "Análisis de variables canónicas", x="Variable canónica 1 (79.1%)", y= "Variable canónica 2 (20.9%)", col= "Temperatura", subtitle = "Día 8") + theme_classic() + scale_color_manual(values =c("blue", "darkorange", "red"), labels=c("12°C","15°C","17°C"))
+
+```
