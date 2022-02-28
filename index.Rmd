@@ -3,7 +3,7 @@ title: "Mortalidad de Larvas zoea 1 de Taliepus dentatus bajo 3 temperaturas dis
 ---
 
 
-# Paquetes utilizados a lo largo del Script. 
+## Paquetes utilizados a lo largo del Script. 
 ```{r message=FALSE, warning=FALSE, include=TRUE}
 library(cowplot)
 library(scales)
@@ -18,7 +18,7 @@ library(survival)
 library(MASS)
 ```
 
-# Importación de base de datos, definición de factores y creación de figura numero 7.
+## Importación de base de datos, definición de factores y creación de figura numero 7.
 ```{r message=FALSE, warning=FALSE, include=TRUE}
 #Importo base de datos.
 Mort<-read.delim("/Users/lucasb/Dropbox/Mac/Desktop/TESIS/TESIS B/RESULTADOS/mort.txt")
@@ -34,16 +34,14 @@ Grafico_frascos<-ggplot(Mort, aes(x=Dia, y=Vivas, colour=Temperatura)) + geom_po
 Grafico_frascos + scale_colour_manual(values =c("dodgerblue1", "green3", "firebrick1"), labels=c("12°C","15°C","17°C"))
 ```
 
-
-# Preparando tabla con estadisticos basicos (SD, SE, CI, MEAN) para analisis de LT50 y Kaplan-meier. 
+## Preparando tabla con estadisticos basicos (SD, SE, CI, MEAN) para analisis de LT50 y Kaplan-meier. 
 ```{r message=FALSE, warning=FALSE, include=TRUE}
 #Estadisticos basicos (SD, SE, CI, MEAN)
 LT50_summary<- summarySE(Mort, measurevar="bino", groupvars=c("Temperatura","Dia"))
 print(LT50_summary)
 ```
 
-
-# Analisis estadistico de LT50 (quasibinomial), tasas de mortalidad y creación de grafico. 
+## Analisis estadistico de LT50 (quasibinomial), tasas de mortalidad y creación de grafico. 
 ```{r message=FALSE, warning=FALSE, include=TRUE}
 #Separación de tabla por temperatura
 mort_12<-LT50_summary[1:11, ]
@@ -78,7 +76,7 @@ lt50_plot + geom_errorbar(aes(ymin=lt50-CI, ymax=lt50+CI), width=.2, position=po
 
 ```
 
-# Analisis de Kaplan-Meier
+## Analisis de Kaplan-Meier
 ```{r message=FALSE, warning=FALSE, include=TRUE}
 ##reorden de la tabla correcto para el analisis
 repV<- Mort$Muertas 

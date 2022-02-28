@@ -1,7 +1,7 @@
 name: "Taliepus dentatus Zoea 1"
 output_dir: "."
 navbar:
-  title: "Tesis"
+  title: "Tesis Lucas Bravo"
   left:
     - text: "Mortalidad"
       href: index.html
